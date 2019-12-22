@@ -6,5 +6,8 @@
   "companionDismissAuto": "It's time for me to head home. Thanks for a refreshing day @!$h",
   "companionRecruited": "I wonder if we'll discover anything new.$h",
   "heal": "Let's get you patched up.$3",
-  "nomedkits": "I'll have to stop by Harvey's Clinic, I haven't got any more bandages.$6"
+  "nomedkits": "I'll have to stop by Harvey's Clinic, I haven't got any more bandages.$6",
+  "companionSuggest": "I'm clearing my head of a project I'm working on.#$q -1 -1#Say @, do you mind if I walk with you?#$r -1 10 Yes#Of course not! What's been on your mind lately?#$r -1 0 No#Sorry Maru, I'm trying to clear my own with some alone time right now.",
+  "companionSuggest_Yes": "I was actually thinking a lot about the concept of %noun recently. Have you heard that...?$u",
+  "companionSuggest_No": "I get it. I'll leave you to your self then."
 }

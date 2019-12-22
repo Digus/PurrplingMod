@@ -64,6 +64,7 @@ namespace NpcAdventure.StateMachine
         public StateFlag CurrentStateFlag { get; private set; }
         public Dictionary<int, SchedulePathDescription> BackedupSchedule { get; internal set; }
         public bool RecruitedToday { get; private set; }
+        public bool SuggestedToday { get; internal set; }
 
         /// <summary>
         /// Change companion state machine state
@@ -143,6 +144,7 @@ namespace NpcAdventure.StateMachine
                 DialogueHelper.SetupCompanionDialogues(this.Companion, this.ContentLoader.LoadStrings($"Dialogue/{this.Name}Spouse"));
 
             this.RecruitedToday = false;
+            this.SuggestedToday = false;
             this.MakeAvailable();
         }
 

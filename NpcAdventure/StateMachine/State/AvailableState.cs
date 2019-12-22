@@ -24,6 +24,18 @@ namespace NpcAdventure.StateMachine.State
         {
             this.CanCreateDialogue = true;
             this.Events.GameLoop.TimeChanged += this.GameLoop_TimeChanged;
+            this.Events.GameLoop.UpdateTicked += this.GameLoop_UpdateTicked;
+        }
+
+        private void GameLoop_UpdateTicked(object sender, UpdateTickedEventArgs e)
+        {
+            var dialogueStack = this.StateMachine.Companion.CurrentDialogue;
+            if (e.IsMultipleOf(15) && this.suggestionDialogue != null && !dialogueStack.Contains(this.suggestionDialogue) && dialogueStack.Count == 0)
+            {
+                // Push suggest dialogue again when companion mind is free and we have created that suggestion dialogue and this dialogue is not already in stack
+                this.StateMachine.Companion.CurrentDialogue.Push(this.suggestionDialogue);
+                this.monitor.Log($"Adventure suggest dialogue for {this.StateMachine.Companion.Name} pushed into stack!");
+            }
         }
 
         private void GameLoop_TimeChanged(object sender, TimeChangedEventArgs e)
@@ -32,8 +44,16 @@ namespace NpcAdventure.StateMachine.State
                 this.CanCreateDialogue = true;
 
             int heartLevel = this.StateMachine.CompanionManager.Farmer.getFriendshipHeartLevelForNPC(this.StateMachine.Companion.Name);
+            int threshold = this.StateMachine.CompanionManager.Config.HeartSuggestThreshold;
+            bool suggested = this.StateMachine.SuggestedToday;
+            bool matchesTimeRange = e.NewTime < 2200 && e.NewTime > 1000;
 
-            if (this.CanCreateDialogue && e.NewTime < 2200 && this.suggestionDialogue == null && heartLevel > 4 && Game1.random.NextDouble() < this.GetSuggestChance())
+            if (!suggested
+                && this.CanCreateDialogue
+                && matchesTimeRange
+                && this.suggestionDialogue == null
+                && heartLevel >= threshold
+                && Game1.random.NextDouble() < this.GetSuggestChance())
             {
                 Dialogue d = DialogueHelper.GenerateDialogue(this.StateMachine.Companion, "companionSuggest");
 
@@ -41,7 +61,8 @@ namespace NpcAdventure.StateMachine.State
                     return; // No dialogue defined, nothing to suggest
 
                 // Add reaction on adventure suggestion acceptance/rejectance question
-                d.answerQuestionBehavior = new Dialogue.onAnswerQuestion((whichResponse) => {
+                d.answerQuestionBehavior = new Dialogue.onAnswerQuestion((whichResponse) =>
+                {
                     List<Response> opts = d.getResponseOptions();
                     NPC n = this.StateMachine.Companion;
 
@@ -54,15 +75,17 @@ namespace NpcAdventure.StateMachine.State
                     {
                         // Farmer not accepted for this time. Farmer can't ask to follow next 2 hours
                         this.CanCreateDialogue = false;
-                        this.doNotAskUntil = e.NewTime + 200;
+                        this.doNotAskUntil = Game1.timeOfDay + 200;
                         DialogueHelper.DrawDialogue(new Dialogue(DialogueHelper.GetDialogueString(n, "companionSuggest_No"), n));
                     }
 
                     this.suggestionDialogue = null;
+                    this.StateMachine.SuggestedToday = true;
+
                     return false;
                 });
+
                 this.suggestionDialogue = d;
-                this.StateMachine.Companion.CurrentDialogue.Push(d);
                 this.monitor.Log($"Added adventure suggest dialogue to {this.StateMachine.Companion.Name}");
             } else if (this.suggestionDialogue != null)
             {
@@ -90,6 +113,13 @@ namespace NpcAdventure.StateMachine.State
 
         public override void Exit()
         {
+            if (this.StateMachine.Companion.CurrentDialogue.Contains(this.suggestionDialogue))
+            {
+                DialogueHelper.RemoveDialogueFromStack(this.StateMachine.Companion, this.suggestionDialogue);
+                this.monitor.Log($"EXIT STATE: Removed adventure suggest dialogue from {this.StateMachine.Companion.Name}'s stack.");
+            }
+
+            this.Events.GameLoop.UpdateTicked -= this.GameLoop_UpdateTicked;
             this.Events.GameLoop.TimeChanged -= this.GameLoop_TimeChanged;
             this.CanCreateDialogue = false;
             this.acceptalDialogue = null;

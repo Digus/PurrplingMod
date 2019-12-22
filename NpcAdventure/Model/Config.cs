@@ -9,6 +9,7 @@ namespace NpcAdventure.Model
     class Config
     {
         public int HeartThreshold { get; set; } = 5;
+        public int HeartSuggestThreshold { get; set; } = 7;
         public bool ShowHUD { get; set; } = true;
     }
 }
