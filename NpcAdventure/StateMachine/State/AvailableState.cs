@@ -46,7 +46,8 @@ namespace NpcAdventure.StateMachine.State
             int heartLevel = this.StateMachine.CompanionManager.Farmer.getFriendshipHeartLevelForNPC(this.StateMachine.Companion.Name);
             int threshold = this.StateMachine.CompanionManager.Config.HeartSuggestThreshold;
             bool suggested = this.StateMachine.SuggestedToday;
-            bool matchesTimeRange = e.NewTime < 2200 && e.NewTime > 1000;
+            bool married = Helper.IsSpouseMarriedToFarmer(this.StateMachine.Companion, this.StateMachine.CompanionManager.Farmer);
+            bool matchesTimeRange = e.NewTime < 2200 && e.NewTime > (married ? 800 : 1000);
 
             if (!suggested
                 && this.CanCreateDialogue
@@ -101,12 +102,14 @@ namespace NpcAdventure.StateMachine.State
 
         private float GetSuggestChance()
         {
-            int heartLevel = this.StateMachine.CompanionManager.Farmer.getFriendshipHeartLevelForNPC(this.StateMachine.Companion.Name);
+            int firendship = this.StateMachine.CompanionManager.Farmer.getFriendshipLevelForNPC(this.StateMachine.Companion.Name);
             bool married = Helper.IsSpouseMarriedToFarmer(this.StateMachine.Companion, this.StateMachine.CompanionManager.Farmer);
-            float chance = 0.066f * heartLevel;
+            float chance = (0.066f * firendship / 100 / 4) + (Game1.random.Next(-100, 100) / 1000);
 
-            if (married)
+            if (married && Game1.random.NextDouble() > 0.7f)
                 chance /= 2;
+
+            this.monitor.VerboseLog($"Suggestion chance for {this.StateMachine.Companion.Name}: {chance}");
 
             return chance;
         }
